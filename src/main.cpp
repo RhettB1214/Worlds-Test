@@ -6,6 +6,19 @@
 
 /*Variable Defintions*/
 
+	/*Controller Variable Definitions*/
+		bool lastKnownStateR1 =	false;
+		bool lastKnownStateR2 = false;
+		bool lastKnownStateUp = false;
+	/*End of Controller Variable Definitions*/	
+	
+
+	/*Pnuematic Toggle Variable Definitions*/
+		bool leftWingToggle = false;
+		bool rightWingToggle = false;
+		bool ptoToggle = false;
+	/*End of Pneumatic Toggle Variable Defintions*/
+
 /*End of Variable Defintions*/
 
 
@@ -190,18 +203,68 @@ void opcontrol()
 	while(true)
 	{
 
+		/*Drive train control*/
 		drive.tank(masterLeftY, masterRightY);
-		if (masterL1)
+
+
+		/*Intake control*/
+		if (masterL1) /*If Left bumper is pressed*/
 		{
+			/*Outtake*/
 			intake.move(127);
 		}
-		else if (masterL2) 
-		{
+		else if (masterL2) /*If Left trigger is pressed*/
+		{	
+			/*Intake*/
 			intake.move(-127);
 		}
 		else
 		{
+			/*Do nothing*/
 			intake.move(0);
+		}
+
+		/*Wing Control*/
+		if (masterR1 != lastKnownStateR1) //Left Wing Control
+		{
+			if (masterR1)
+			{
+				leftWingToggle = !leftWingToggle; //Toggles the variable that controls the left wing when R1 is pressed
+				leftHoriWing.set_value(leftWingToggle); //Sets the left wing to the toggled value
+			}
+
+		}
+		if (masterR2 != lastKnownStateR2) //Right Wing Control
+		{
+			if (masterR2)
+			{
+				rightWingToggle = !rightWingToggle; //Toggles the variable that controls the right wing when R2 is pressed
+				rightHoriWing.set_value(rightWingToggle); //Sets the right wing to the toggled value
+			}
+
+		}
+		if (masterB) //Both Wing Hold Control
+		{
+			rightHoriWing.set_value(true); //Sets the right wing to true
+			leftHoriWing.set_value(true); //Sets the left wing to true
+			rightWingToggle = false; //Sets the right wing to false
+			leftWingToggle = false; //Sets the left wing to false
+		}
+		else 
+		{
+			rightHoriWing.set_value(rightWingToggle); //Sets the right wing to the toggled value
+			leftHoriWing.set_value(leftWingToggle); //Sets the left wing to the toggled value
+		}
+
+		/*PTO Control*/
+		if (masterUp != lastKnownStateUp) //PTO Control
+		{
+			if (masterUp)
+			{
+				ptoToggle = !ptoToggle; //Toggles the variable that controls the PTO when Up is pressed
+				ptoPiston.set_value(ptoToggle); //Sets the PTO to the toggled value
+			}
+
 		}
 
 
