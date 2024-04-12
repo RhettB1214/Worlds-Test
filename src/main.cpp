@@ -24,12 +24,12 @@
 
 /*Device Defintions*/
 	/*Motor Defintions*/
-		pros::Motor fLD (FLD, SPEEDBOX, true);
-		pros::Motor mLD (MLD, SPEEDBOX, true);
-		pros::Motor bLD (BLD, SPEEDBOX, true);
-		pros::Motor fRD (FRD, SPEEDBOX, false);
-		pros::Motor mRD (MRD, SPEEDBOX, false);
-		pros::Motor bRD (BRD, SPEEDBOX, false);
+		pros::Motor fLD (FLD, SPEEDBOX, false);
+		pros::Motor mLD (MLD, SPEEDBOX, false);
+		pros::Motor bLD (BLD, SPEEDBOX, false);
+		pros::Motor fRD (FRD, SPEEDBOX, true);
+		pros::Motor mRD (MRD, SPEEDBOX, true);
+		pros::Motor bRD (BRD, SPEEDBOX, true);
 
 		pros::Motor lIM (LIM, SPEEDBOX, true);
 		pros::Motor rIM (RIM, SPEEDBOX, false);
@@ -65,8 +65,8 @@
 /*LemLib Chassis Definitions*/
 
 	/*LemLib Chassis Sensor Defintions*/
-		lemlib::TrackingWheel HoriWheel(&HoriOdom, 2, 0, 1);
-		lemlib::TrackingWheel VertWheel(&VertOdom, 2, 0, 1);
+		lemlib::TrackingWheel HoriWheel(&HoriOdom, 2, 1.5, 1);
+		lemlib::TrackingWheel VertWheel(&VertOdom, 2, 0.25, 1);
 	/*End of LemLib Chassis Sensor Defintions*/
 
 	/*LemLib Drivetrain Initilization*/
@@ -126,9 +126,9 @@
 	/*Throttle Curve Initialzition*/
 		lemlib::ExpoDriveCurve throttleCurve
 		(
-			5, //Joystick Deadband
-			10, //Minimum output where dt will move out of 127
-			5 //Expo Curve Gains
+			0, //Joystick Deadband
+			0, //Minimum output where dt will move out of 127
+			1.012 //Expo Curve Gains
 		);
 	/*End of Throttle Curve Initialzition*/
 
@@ -183,7 +183,11 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() 
+{
+	lDrive.set_brake_modes(HOLD);
+	rDrive.set_brake_modes(HOLD);
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -200,6 +204,9 @@ void autonomous() {}
  */
 void opcontrol() 
 {
+	lDrive.set_brake_modes(COAST);
+	rDrive.set_brake_modes(COAST);
+
 	while(true)
 	{
 
@@ -227,6 +234,7 @@ void opcontrol()
 		/*Wing Control*/
 		if (masterR1 != lastKnownStateR1) //Left Wing Control
 		{
+			lastKnownStateR1 = masterR1;
 			if (masterR1)
 			{
 				leftWingToggle = !leftWingToggle; //Toggles the variable that controls the left wing when R1 is pressed
@@ -236,6 +244,7 @@ void opcontrol()
 		}
 		if (masterR2 != lastKnownStateR2) //Right Wing Control
 		{
+			lastKnownStateR2 = masterR2;
 			if (masterR2)
 			{
 				rightWingToggle = !rightWingToggle; //Toggles the variable that controls the right wing when R2 is pressed
@@ -250,7 +259,7 @@ void opcontrol()
 			rightWingToggle = false; //Sets the right wing to false
 			leftWingToggle = false; //Sets the left wing to false
 		}
-		else 
+		else if(masterB == false) 
 		{
 			rightHoriWing.set_value(rightWingToggle); //Sets the right wing to the toggled value
 			leftHoriWing.set_value(leftWingToggle); //Sets the left wing to the toggled value

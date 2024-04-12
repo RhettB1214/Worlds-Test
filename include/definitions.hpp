@@ -56,19 +56,19 @@
 #define poseTheta drive.getPose().theta
 
 //Motor Port Definitions
-#define FLD 7
-#define MLD 8
-#define BLD 3
-#define FRD 4
-#define MRD 5
-#define BRD 6
+#define FLD 17
+#define MLD 18
+#define BLD 19
+#define FRD 14
+#define MRD 13
+#define BRD 12
 #define LIM 1
-#define RIM 2
+#define RIM 10
 
 //Sensor Port Definitions
-#define HODOM_ROT 9
-#define VODOM_ROT 10
-#define IMU_PORT 11
+#define HODOM_ROT 16
+#define VODOM_ROT 4
+#define IMU_PORT 20
 
 
 //Three-Wire Device Port Definitions
