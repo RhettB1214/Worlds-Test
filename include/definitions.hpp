@@ -62,8 +62,8 @@
 #define FRD 14
 #define MRD 13
 #define BRD 12
-#define LIM 1
-#define RIM 10
+#define LIM 10
+#define RIM 1
 
 //Sensor Port Definitions
 #define HODOM_ROT 16
@@ -74,7 +74,7 @@
 //Three-Wire Device Port Definitions
 #define LEFTW_ADIDO 'A'
 #define RIGHTW_ADIDO 'B'
-#define VERTW_ADIDO 'C'
+#define VERTW_ADIDO 'H'
 #define PTO_ADIDO 'D'
 
 #endif /* DEFINITIONS */

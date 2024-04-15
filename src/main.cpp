@@ -1,8 +1,9 @@
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "definitions.hpp"
+#include "pros/motors.h"
 
-
+ASSET(AWP1_txt);
 
 /*Variable Defintions*/
 
@@ -10,12 +11,14 @@
 		bool lastKnownStateR1 =	false;
 		bool lastKnownStateR2 = false;
 		bool lastKnownStateUp = false;
+		bool lastKnownStateB = false;
 	/*End of Controller Variable Definitions*/	
 	
 
 	/*Pnuematic Toggle Variable Definitions*/
 		bool leftWingToggle = false;
 		bool rightWingToggle = false;
+		bool vertToggle = false;
 		bool ptoToggle = false;
 	/*End of Pneumatic Toggle Variable Defintions*/
 
@@ -45,8 +48,8 @@
 	/*Sensor Definitions*/
 		pros::Imu imu(IMU_PORT);
 
-		pros::Rotation HoriOdom(HODOM_ROT, false);
-		pros::Rotation VertOdom(VODOM_ROT, false);
+		pros::Rotation HoriOdom(HODOM_ROT, true);
+		pros::Rotation VertOdom(VODOM_ROT, true);
 	/*End of Sensor Definitions*/
 
 	/*ADI Definitions*/
@@ -65,8 +68,8 @@
 /*LemLib Chassis Definitions*/
 
 	/*LemLib Chassis Sensor Defintions*/
-		lemlib::TrackingWheel HoriWheel(&HoriOdom, 2, 1.5, 1);
-		lemlib::TrackingWheel VertWheel(&VertOdom, 2, 0.25, 1);
+		lemlib::TrackingWheel HoriWheel(&HoriOdom, 2.125, 1.5, 1);
+		lemlib::TrackingWheel VertWheel(&VertOdom, 2.125, 0.25, 1);
 	/*End of LemLib Chassis Sensor Defintions*/
 
 	/*LemLib Drivetrain Initilization*/
@@ -77,7 +80,7 @@
 			10, /*Track Width*/
 			2.75, /*Wheel Diameter*/
 			600, /*Wheel RPM*/
-			8 /*Chase Power*/
+			3 /*Chase Power*/
 		};
 	/*End of LemLib Drivetrain Initilization*/
 
@@ -95,14 +98,14 @@
 	/*Lateral (Forwards/Backwards) PID Initilization*/
 		lemlib::ControllerSettings lateralController
 		(
-			8,  //16, // kP
+			10,  //16, // kP
 			0, //3 // kI
-			32, //80, // kD
+			43, //80, // kD
 			0, //4 // Windup Range
 			1, // smallErrorRange
-			100, // smallErrorTimeout
+			100000, // smallErrorTimeout
 			3, // largeErrorRange
-			500, // largeErrorTimeout
+			50000, // largeErrorTimeout
 			10 // Slew Rate
 		);
 	/*End of Lateral (Forwards/Backwards) PID Initilization*/
@@ -113,12 +116,12 @@
 		(
 			4,  //7 // kP
 			0, // kI
-			40, //60 // kD
+			60.35, //60 // kD
 			0, // Windup Range
 			1, // smallErrorRange
-			100, // smallErrorTimeout
-			3, // largeErrorRange
-			500, // largeErrorTimeout
+			100000, // smallErrorTimeout
+			1, // largeErrorRange
+			50000, // largeErrorTimeout
 			10 // Slew Rate
 		);
 	/*End of Angular (Turning) PID Initilization*/
@@ -140,6 +143,17 @@
 
 /*End of LemLib Chassis Initializations*/
 
+void screen() {
+    // loop forever
+    while (true) {
+        lemlib::Pose pose = drive.getPose(); // get the current position of the robot
+        pros::lcd::print(0, "x: %f", pose.x); // print the x position
+        pros::lcd::print(1, "y: %f", pose.y); // print the y position
+        pros::lcd::print(2, "heading: %f", pose.theta); // print the heading
+        pros::delay(10);
+    }
+}
+
 
 
 /**
@@ -150,8 +164,10 @@
  */
 void initialize() 
 {
+	pros::lcd::initialize(); // initialize brain screen
 	drive.calibrate();
-	intake.set_brake_modes(HOLD);
+	intake.set_brake_modes(COAST);
+	pros::Task screenTask(screen); // create a task to print the position to the screen
 }
 
 /**
@@ -187,6 +203,10 @@ void autonomous()
 {
 	lDrive.set_brake_modes(HOLD);
 	rDrive.set_brake_modes(HOLD);
+
+	drive.setPose(-40, -54, 90);
+	drive.moveToPose(-57, -24, 180, 2500, {.forwards = false, .minSpeed = 100});
+	//drive.follow(AWP1_txt, 15, 1500, false);
 }
 
 /**
@@ -252,22 +272,37 @@ void opcontrol()
 			}
 
 		}
-		if (masterB) //Both Wing Hold Control
+		if (masterY) //Both Wing Hold Control
 		{
 			rightHoriWing.set_value(true); //Sets the right wing to true
 			leftHoriWing.set_value(true); //Sets the left wing to true
 			rightWingToggle = false; //Sets the right wing to false
 			leftWingToggle = false; //Sets the left wing to false
 		}
-		else if(masterB == false) 
+		else if(masterY == false) 
 		{
 			rightHoriWing.set_value(rightWingToggle); //Sets the right wing to the toggled value
 			leftHoriWing.set_value(leftWingToggle); //Sets the left wing to the toggled value
 		}
 
+		if (masterB != lastKnownStateB) //Vertical Wing Control
+		{
+			lastKnownStateB = masterB;
+			if (masterB)
+			{
+				vertToggle = !vertToggle; //Toggles the variable that controls the vertical wing when X is pressed
+				vertWing.set_value(vertToggle); //Sets the vertical wing to the toggled value
+			}
+
+		}
+
+
+
+
 		/*PTO Control*/
 		if (masterUp != lastKnownStateUp) //PTO Control
 		{
+			lastKnownStateUp = masterUp;
 			if (masterUp)
 			{
 				ptoToggle = !ptoToggle; //Toggles the variable that controls the PTO when Up is pressed
