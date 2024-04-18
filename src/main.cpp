@@ -1,6 +1,8 @@
 #include "main.h"
 #include "lemlib/api.hpp"
+#include "autoSelect/selection.h"
 #include "definitions.hpp"
+#include <sys/types.h>
 
 
 ASSET(AWP1_txt);
@@ -28,6 +30,7 @@ ASSET(disrupt_txt);
 		bool ptoToggle = false;
 		bool hangReleased = false;
 	/*End of Pneumatic Toggle Variable Defintions*/
+
 
 /*End of Variable Defintions*/
 
@@ -151,16 +154,6 @@ ASSET(disrupt_txt);
 
 /*End of LemLib Chassis Initializations*/
 
-void screen() {
-    // loop forever
-    while (true) {
-        lemlib::Pose pose = drive.getPose(); // get the current position of the robot
-        pros::lcd::print(0, "x: %f", pose.x); // print the x position
-        pros::lcd::print(1, "y: %f", pose.y); // print the y position
-        pros::lcd::print(2, "heading: %f", pose.theta); // print the heading
-        pros::delay(10);
-    }
-}
 
 
 
@@ -172,10 +165,9 @@ void screen() {
  */
 void initialize() 
 {
-	pros::lcd::initialize(); // initialize brain screen
+	selector::init();
 	drive.calibrate();
 	intake.set_brake_modes(COAST);
-	pros::Task screenTask(screen); // create a task to print the position to the screen
 }
 
 /**
@@ -211,121 +203,138 @@ void autonomous()
 {
 	drive.setBrakeMode(HOLD);
 
-	//Elim Disruptor Auton
-	drive.setPose(-36, -61, 180);
+
+
+	switch(selector::auton)
+	{
+		case 1:
+			//AWP Auton
+			//Sets the initial pose of the robot
+			drive.setPose(-46, -57, 135);
+
+			//Pushes preload triball into goal
+			drive.moveToPose(-57, -26, 180, 2500, {.forwards = false, .minSpeed = 100});
+			
+			//Drives back and descores triball from matchload zone
+			drive.moveToPose(-45, -57.25, 135, 2000);
+			drive.waitUntilDone();
+			vertWing.set_value(true);
+			pros::delay(100);
+			drive.turnToHeading(90, 1000);
+			drive.waitUntilDone();
+			vertWing.set_value(false);
+
+			//Drives to touch elevation bar
+			drive.moveToPose(-6, -64, 90, 2000);
+			leftHoriWing.set_value(1);
+			break;
+		
+
+		case 2:
+			//5 Ball Rush Auton
+			drive.setPose(48.026, -55.261, 318);
+			
+			//Hit Preload to the side of the goal with Wings
+			rightHoriWing.set_value(1);
+			pros::delay(100);
+			rightHoriWing.set_value(0);
+
+			//Start intaking and grab center bar triball
+			intake.move(100);
+			drive.follow(RedFar1_txt, 15, 1500);
+			drive.waitUntilDone();
+			drive.turnToHeading(270, 300);
+			drive.waitUntilDone();
+			intake.move(0);
+
+			
+			//Deploy vertical wings and score center offensive triball
+			vertWing.set_value(1);
+			pros::delay(100);
+			drive.moveToPoint(50, 0, 1000, {.forwards = false});
+			drive.waitUntilDone();
+
+			//Back up, retract vertical wings, and score triball that's in the intake
+			drive.moveToPoint(25, 0, 300);
+			drive.waitUntilDone();
+			vertWing.set_value(0);
+			pros::delay(400);
+			drive.moveToPoint(50, 0, 1000);
+			drive.waitUntil(5);
+			intake.move(-127);
+			drive.waitUntilDone();
+
+
+			//Grab offensive bar triball
+			drive.moveToPoint(35, 0, 500, {.forwards = false});
+			drive.waitUntilDone();
+			intake.move(127);
+			drive.turnToPoint(35, -60, 500);
+			drive.follow(RedFar2_txt, 15, 1250);
+			
+
+			//Drive to matchload bar and remove triball that starts in the ml zone
+			drive.moveToPoint(25, -24, 500, {.forwards = false});
+			intake.move(0);
+			drive.turnToPoint(65, -65, 500);
+			drive.waitUntilDone();
+			pros::delay(250);
+			drive.moveToPose(56, -44.25, 135, 1500);
+			drive.turnToHeading(45, 500);
+			drive.waitUntilDone();
+			vertWing.set_value(1);
+			pros::delay(200);
+			drive.turnToPoint(-12, 60, 500);
+			drive.waitUntilDone();
+
+			//Outtake the triball thats in the intake and score the three triballs on the side of the Goal
+			vertWing.set_value(0);
+			pros::delay(200);
+			rightHoriWing.set_value(1);
+			leftHoriWing.set_value(1);
+			drive.turnToHeading(35, 500, {.maxSpeed = 80});
+			drive.waitUntil(20);
+			intake.move(-127);
+			drive.moveToPoint(62, -24, 750, {.minSpeed = 127});
+			drive.waitUntilDone();
+			rightHoriWing.set_value(0);
+			leftHoriWing.set_value(0);
+			drive.moveToPoint(62, -36, 500, {.forwards = false, .minSpeed = 127});
+			drive.turnToHeading(180, 500);
+			drive.moveToPoint(62, -20, 750, {.forwards = false, .minSpeed = 127});
+			drive.moveToPoint(62, -38, 500, {.minSpeed = 127});
+		break;
+
+
+
+		case 3:
+			//Safe 6 Ball Auton
+
+		break;
+
+		case 4:
+			//Elim Disruptor Auton
+			drive.setPose(-36, -61, 180);
 	
-	intake.move(127);
-	drive.moveToPoint(-36, -18, 1000, {.forwards = false, .minSpeed = 100});
-	drive.turnToHeading(270, 300);
-	drive.waitUntilDone();
-	vertWing.set_value(1);
-	intake.move(-127);
-	drive.moveToPoint(-5, -18, 1000, {.forwards = false, .minSpeed = 100});
-	drive.waitUntilDone();
-	intake.move(0);
-	drive.moveToPoint(-12, -18, 1000);
-	drive.turnToHeading(90, 500);
-	drive.moveToPoint(-50, -18, 1000, {.forwards = false, .minSpeed = 100});
-	drive.moveToPoint(-25, -18, 500);
-	drive.turnToHeading(270, 500);
+			intake.move(127);
+			drive.moveToPoint(-36, -18, 1000, {.forwards = false, .minSpeed = 100});
+			drive.turnToHeading(270, 300);
+			drive.waitUntilDone();
+			vertWing.set_value(1);
+			intake.move(-127);
+			drive.moveToPoint(-5, -18, 1000, {.forwards = false, .minSpeed = 100});
+			drive.waitUntilDone();
+			intake.move(0);
+			drive.moveToPoint(-12, -18, 1000);
+			drive.turnToHeading(90, 500);
+			drive.moveToPoint(-50, -18, 1000, {.forwards = false, .minSpeed = 100});
+			drive.moveToPoint(-25, -18, 500);
+			drive.turnToHeading(270, 500);
+		break;			
 
+		
 
-
-
-	/*
-	//5 Ball Rush Auton
-	drive.setPose(48.026, -55.261, 318);
-	
-	//Hit Preload to the side of the goal with Wings
-	rightHoriWing.set_value(1);
-	pros::delay(100);
-	rightHoriWing.set_value(0);
-
-	//Start intaking and grab center bar triball
-	intake.move(100);
-	drive.follow(RedFar1_txt, 15, 1500);
-	drive.waitUntilDone();
-	drive.turnToHeading(270, 300);
-	drive.waitUntilDone();
-	intake.move(0);
-
-	
-	//Deploy vertical wings and score center offensive triball
-	vertWing.set_value(1);
-	pros::delay(100);
-	drive.moveToPoint(50, 0, 1000, {.forwards = false});
-	drive.waitUntilDone();
-
-	//Back up, retract vertical wings, and score triball that's in the intake
-	drive.moveToPoint(25, 0, 300);
-	drive.waitUntilDone();
-	vertWing.set_value(0);
-	pros::delay(400);
-	drive.moveToPoint(50, 0, 1000);
-	drive.waitUntil(5);
-	intake.move(-127);
-	drive.waitUntilDone();
-
-
-	//Grab offensive bar triball
-	drive.moveToPoint(35, 0, 500, {.forwards = false});
-	drive.waitUntilDone();
-	intake.move(127);
-	drive.turnToPoint(35, -60, 500);
-	drive.follow(RedFar2_txt, 15, 1250);
-	
-
-	//Drive to matchload bar and remove triball that starts in the ml zone
-	drive.moveToPoint(25, -24, 500, {.forwards = false});
-	intake.move(0);
-	drive.turnToPoint(65, -65, 500);
-	drive.waitUntilDone();
-	pros::delay(250);
-	drive.moveToPose(56, -44.25, 135, 1500);
-	drive.turnToHeading(45, 500);
-	drive.waitUntilDone();
-	vertWing.set_value(1);
-	pros::delay(200);
-	drive.turnToPoint(-12, 60, 500);
-	drive.waitUntilDone();
-
-	//Outtake the triball thats in the intake and score the three triballs on the side of the Goal
-	vertWing.set_value(0);
-	pros::delay(200);
-	rightHoriWing.set_value(1);
-	leftHoriWing.set_value(1);
-	drive.turnToHeading(35, 500, {.maxSpeed = 80});
-	drive.waitUntil(20);
-	intake.move(-127);
-	drive.moveToPoint(62, -24, 750, {.minSpeed = 127});
-	drive.waitUntilDone();
-	rightHoriWing.set_value(0);
-	leftHoriWing.set_value(0);
-	drive.moveToPoint(62, -36, 500, {.forwards = false, .minSpeed = 127});
-	drive.turnToHeading(180, 500);
-	drive.moveToPoint(62, -20, 750, {.forwards = false, .minSpeed = 127});
-	drive.moveToPoint(62, -38, 500, {.minSpeed = 127});*/
-
-
-
-	/*//AWP Auton
-	//Sets the initial pose of the robot
-	drive.setPose(-46, -57, 135);
-
-	//Pushes preload triball into goal
-	drive.moveToPose(-57, -26, 180, 2500, {.forwards = false, .minSpeed = 100});
-	
-	//Drives back and descores triball from matchload zone
-	drive.moveToPose(-45, -57.25, 135, 2000);
-	drive.waitUntilDone();
-	vertWing.set_value(true);
-	pros::delay(100);
-	drive.turnToHeading(90, 1000);
-	drive.waitUntilDone();
-	vertWing.set_value(false);
-
-	//Drives to touch elevation bar
-	drive.moveToPose(-6, -64, 90, 2000);*/
+	}
 	
 	
 }
@@ -371,6 +380,7 @@ void opcontrol()
 			intake.move(0);
 		}
 
+		
 		/*Wing Control*/
 		if (masterR1 != lastKnownStateR1) //Left Wing Control
 		{
@@ -419,8 +429,6 @@ void opcontrol()
 		}
 
 
-
-
 		/*PTO Control*/
 		if (masterRight != lastKnownStateRight) //PTO Control
 		{
@@ -453,5 +461,11 @@ void opcontrol()
 
 		}
 
+		/*Motor Lock While Hanging Control*/
+		if (ptoToggle && masterLeftY == 0 && masterRightY == 0)
+		{
+			lDrive.brake();
+			rDrive.brake();
+		}
 	}
 }
