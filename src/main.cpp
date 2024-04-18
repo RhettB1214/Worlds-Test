@@ -1,25 +1,32 @@
 #include "main.h"
 #include "lemlib/api.hpp"
 #include "definitions.hpp"
-#include "pros/motors.h"
+
 
 ASSET(AWP1_txt);
+ASSET(AWP2_txt);
+ASSET(RedFar1_txt);
+ASSET(RedFar2_txt);
+ASSET(RedFar3_txt);
+ASSET(disrupt_txt);
 
 /*Variable Defintions*/
 
 	/*Controller Variable Definitions*/
 		bool lastKnownStateR1 =	false;
 		bool lastKnownStateR2 = false;
-		bool lastKnownStateUp = false;
+		bool lastKnownStateRight = false;
 		bool lastKnownStateB = false;
+		bool lastKnownStateDown = false;
 	/*End of Controller Variable Definitions*/	
 	
 
-	/*Pnuematic Toggle Variable Definitions*/
+	/*Pneumatic Toggle Variable Definitions*/
 		bool leftWingToggle = false;
 		bool rightWingToggle = false;
 		bool vertToggle = false;
 		bool ptoToggle = false;
+		bool hangReleased = false;
 	/*End of Pneumatic Toggle Variable Defintions*/
 
 /*End of Variable Defintions*/
@@ -34,8 +41,8 @@ ASSET(AWP1_txt);
 		pros::Motor mRD (MRD, SPEEDBOX, true);
 		pros::Motor bRD (BRD, SPEEDBOX, true);
 
-		pros::Motor lIM (LIM, SPEEDBOX, true);
-		pros::Motor rIM (RIM, SPEEDBOX, false);
+		pros::Motor lIM (LIM, SPEEDBOX, false);
+		pros::Motor rIM (RIM, SPEEDBOX, true);
 	/*End of Motor Defintions*/
 
 	/*Motor Group Definitions*/
@@ -58,6 +65,7 @@ ASSET(AWP1_txt);
 		pros::ADIDigitalOut vertWing(VERTW_ADIDO);
 
 		pros::ADIDigitalOut ptoPiston(PTO_ADIDO);
+		pros::ADIDigitalOut hangPiston(HANG_ADIDO);
 	/*End of ADI Defintions*/
 
 	/*Controller Definitions*/
@@ -103,9 +111,9 @@ ASSET(AWP1_txt);
 			43, //80, // kD
 			0, //4 // Windup Range
 			1, // smallErrorRange
-			100000, // smallErrorTimeout
+			100, // smallErrorTimeout
 			3, // largeErrorRange
-			50000, // largeErrorTimeout
+			500, // largeErrorTimeout
 			10 // Slew Rate
 		);
 	/*End of Lateral (Forwards/Backwards) PID Initilization*/
@@ -119,9 +127,9 @@ ASSET(AWP1_txt);
 			60.35, //60 // kD
 			0, // Windup Range
 			1, // smallErrorRange
-			100000, // smallErrorTimeout
+			100, // smallErrorTimeout
 			1, // largeErrorRange
-			50000, // largeErrorTimeout
+			500, // largeErrorTimeout
 			10 // Slew Rate
 		);
 	/*End of Angular (Turning) PID Initilization*/
@@ -201,12 +209,125 @@ void competition_initialize() {}
  */
 void autonomous() 
 {
-	lDrive.set_brake_modes(HOLD);
-	rDrive.set_brake_modes(HOLD);
+	drive.setBrakeMode(HOLD);
 
-	drive.setPose(-40, -54, 90);
-	drive.moveToPose(-57, -24, 180, 2500, {.forwards = false, .minSpeed = 100});
-	//drive.follow(AWP1_txt, 15, 1500, false);
+	//Elim Disruptor Auton
+	drive.setPose(-36, -61, 180);
+	
+	intake.move(127);
+	drive.moveToPoint(-36, -18, 1000, {.forwards = false, .minSpeed = 100});
+	drive.turnToHeading(270, 300);
+	drive.waitUntilDone();
+	vertWing.set_value(1);
+	intake.move(-127);
+	drive.moveToPoint(-5, -18, 1000, {.forwards = false, .minSpeed = 100});
+	drive.waitUntilDone();
+	intake.move(0);
+	drive.moveToPoint(-12, -18, 1000);
+	drive.turnToHeading(90, 500);
+	drive.moveToPoint(-50, -18, 1000, {.forwards = false, .minSpeed = 100});
+	drive.moveToPoint(-25, -18, 500);
+	drive.turnToHeading(270, 500);
+
+
+
+
+	/*
+	//5 Ball Rush Auton
+	drive.setPose(48.026, -55.261, 318);
+	
+	//Hit Preload to the side of the goal with Wings
+	rightHoriWing.set_value(1);
+	pros::delay(100);
+	rightHoriWing.set_value(0);
+
+	//Start intaking and grab center bar triball
+	intake.move(100);
+	drive.follow(RedFar1_txt, 15, 1500);
+	drive.waitUntilDone();
+	drive.turnToHeading(270, 300);
+	drive.waitUntilDone();
+	intake.move(0);
+
+	
+	//Deploy vertical wings and score center offensive triball
+	vertWing.set_value(1);
+	pros::delay(100);
+	drive.moveToPoint(50, 0, 1000, {.forwards = false});
+	drive.waitUntilDone();
+
+	//Back up, retract vertical wings, and score triball that's in the intake
+	drive.moveToPoint(25, 0, 300);
+	drive.waitUntilDone();
+	vertWing.set_value(0);
+	pros::delay(400);
+	drive.moveToPoint(50, 0, 1000);
+	drive.waitUntil(5);
+	intake.move(-127);
+	drive.waitUntilDone();
+
+
+	//Grab offensive bar triball
+	drive.moveToPoint(35, 0, 500, {.forwards = false});
+	drive.waitUntilDone();
+	intake.move(127);
+	drive.turnToPoint(35, -60, 500);
+	drive.follow(RedFar2_txt, 15, 1250);
+	
+
+	//Drive to matchload bar and remove triball that starts in the ml zone
+	drive.moveToPoint(25, -24, 500, {.forwards = false});
+	intake.move(0);
+	drive.turnToPoint(65, -65, 500);
+	drive.waitUntilDone();
+	pros::delay(250);
+	drive.moveToPose(56, -44.25, 135, 1500);
+	drive.turnToHeading(45, 500);
+	drive.waitUntilDone();
+	vertWing.set_value(1);
+	pros::delay(200);
+	drive.turnToPoint(-12, 60, 500);
+	drive.waitUntilDone();
+
+	//Outtake the triball thats in the intake and score the three triballs on the side of the Goal
+	vertWing.set_value(0);
+	pros::delay(200);
+	rightHoriWing.set_value(1);
+	leftHoriWing.set_value(1);
+	drive.turnToHeading(35, 500, {.maxSpeed = 80});
+	drive.waitUntil(20);
+	intake.move(-127);
+	drive.moveToPoint(62, -24, 750, {.minSpeed = 127});
+	drive.waitUntilDone();
+	rightHoriWing.set_value(0);
+	leftHoriWing.set_value(0);
+	drive.moveToPoint(62, -36, 500, {.forwards = false, .minSpeed = 127});
+	drive.turnToHeading(180, 500);
+	drive.moveToPoint(62, -20, 750, {.forwards = false, .minSpeed = 127});
+	drive.moveToPoint(62, -38, 500, {.minSpeed = 127});*/
+
+
+
+	/*//AWP Auton
+	//Sets the initial pose of the robot
+	drive.setPose(-46, -57, 135);
+
+	//Pushes preload triball into goal
+	drive.moveToPose(-57, -26, 180, 2500, {.forwards = false, .minSpeed = 100});
+	
+	//Drives back and descores triball from matchload zone
+	drive.moveToPose(-45, -57.25, 135, 2000);
+	drive.waitUntilDone();
+	vertWing.set_value(true);
+	pros::delay(100);
+	drive.turnToHeading(90, 1000);
+	drive.waitUntilDone();
+	vertWing.set_value(false);
+
+	//Drives to touch elevation bar
+	drive.moveToPose(-6, -64, 90, 2000);*/
+	
+	
 }
 
 /**
@@ -224,8 +345,7 @@ void autonomous()
  */
 void opcontrol() 
 {
-	lDrive.set_brake_modes(COAST);
-	rDrive.set_brake_modes(COAST);
+	drive.setBrakeMode(COAST);
 
 	while(true)
 	{
@@ -238,12 +358,12 @@ void opcontrol()
 		if (masterL1) /*If Left bumper is pressed*/
 		{
 			/*Outtake*/
-			intake.move(127);
+			intake.move(-127);
 		}
 		else if (masterL2) /*If Left trigger is pressed*/
 		{	
 			/*Intake*/
-			intake.move(-127);
+			intake.move(127);
 		}
 		else
 		{
@@ -274,10 +394,12 @@ void opcontrol()
 		}
 		if (masterY) //Both Wing Hold Control
 		{
-			rightHoriWing.set_value(true); //Sets the right wing to true
-			leftHoriWing.set_value(true); //Sets the left wing to true
 			rightWingToggle = false; //Sets the right wing to false
 			leftWingToggle = false; //Sets the left wing to false
+			leftHoriWing.set_value(true); //Sets the left wing to true
+			rightHoriWing.set_value(true); //Sets the right wing to true
+			leftHoriWing.set_value(true); //Sets the left wing to true
+			
 		}
 		else if(masterY == false) 
 		{
@@ -300,18 +422,36 @@ void opcontrol()
 
 
 		/*PTO Control*/
-		if (masterUp != lastKnownStateUp) //PTO Control
+		if (masterRight != lastKnownStateRight) //PTO Control
 		{
-			lastKnownStateUp = masterUp;
-			if (masterUp)
+			lastKnownStateRight = masterRight;
+			if (masterRight)
 			{
 				ptoToggle = !ptoToggle; //Toggles the variable that controls the PTO when Up is pressed
 				ptoPiston.set_value(ptoToggle); //Sets the PTO to the toggled value
+
+				if(ptoToggle)
+				{
+					drive.setBrakeMode(HOLD); //Sets the drivetrain motors to hold if PTO is toggled on
+				}
+				else
+				{
+					drive.setBrakeMode(COAST); //Sets the drivetrain motors to coast if PTO is toggled off
+				}
 			}
 
 		}
 
+		/*Hang Release Control*/
+		if (masterDown != lastKnownStateDown) //Hang Release Control
+		{
+			lastKnownStateDown = masterDown;
+			if (masterDown && !hangReleased)
+			{
+				hangPiston.set_value(1); //Sets the hang piston to true when Down is pressed
+			}
+
+		}
 
 	}
-	
 }
