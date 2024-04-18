@@ -54,6 +54,10 @@
 #define poseX drive.getPose().x
 #define poseY drive.getPose().y
 #define poseTheta drive.getPose().theta
+#define dLeft lemlib::DriveSide::LEFT
+#define dRight lemlib::DriveSide::RIGHT
+#define CCW lemlib::AngularDirection::CCW_COUNTERCLOCKWISE
+#define CW lemlib::AngularDirection::CW_CLOCKWISE
 
 //Motor Port Definitions
 #define FLD 17
@@ -72,9 +76,10 @@
 
 
 //Three-Wire Device Port Definitions
-#define LEFTW_ADIDO 'A'
-#define RIGHTW_ADIDO 'B'
+#define LEFTW_ADIDO 'D'
+#define RIGHTW_ADIDO 'E'
 #define VERTW_ADIDO 'H'
-#define PTO_ADIDO 'D'
+#define PTO_ADIDO 'C'
+#define HANG_ADIDO 'G'
 
 #endif /* DEFINITIONS */
